@@ -1,0 +1,351 @@
+---
+title: "Logistic Regression. Week02"
+author: "Course Notes by Fernando San Segundo"
+date: "May 2015"
+output: 
+  html_document:
+    toc: true 
+---
+
+```{r echo=FALSE, eval=FALSE}
+opts_chunk$set(comment=NA, fig.width=6, fig.height=6)
+```
+
+
+A good reference about using R for Logistic Regression is [http://www.ats.ucla.edu/stat/r/dae/logit.htm](http://www.ats.ucla.edu/stat/r/dae/logit.htm)
+
+## Log Likelihood Ratio Test for the CHD Example
+
+We are going to compute the log likelihood ratio for the logistic model vs the null (naïve) model. 
+
+We begin by loading the data in the CHDAGE.txt file. In my case the file is located in a subfolder called data, inside the R work folder. You may need to learn how to set the working directory in R (in RStudio there's a menu option for this under *Session*) and adapt the following command to your setup.
+
+```{r}
+CHDdata = read.table("./data/CHDAGE.txt", header = TRUE)
+```
+
+You can see the first few rows of the data table using the `head` function:
+```{r}
+head(CHDdata)
+```
+
+
+
+Let us do a basic plot of the data:
+```{r}
+plot(CHDdata$AGE, CHDdata$CHD, , xlab="Age", ylab="Chd")
+```
+
+The next step is fitting the logistic model, using the `glm` function. I have stored the resulting model object in the glmCHD, for an easier access to the model components. The `summary` function provides an initial description of the model:
+
+```{r}
+glmCHD = glm(CHD ~ AGE, family = binomial(link = "logit"), CHDdata)
+(summGlmCHD = summary(glmCHD))
+```
+The outer parenthesis are just a way of asking R to print the result of an assignment (otherwise R simply assigns the result to a variable silently). Next, in order to obtain the log likelihood ratio we are going to use two of the components of the model, the deviance of the null model and the deviance of the fitted model (the one including `AGE` as predictor variable).
+
+```{r}
+glmCHD$null.deviance - glmCHD$deviance
+```
+
+The model curve can be added to the plot with the `lines` function:
+
+```{r echo=-1}
+plot(CHDdata$AGE, CHDdata$CHD, , xlab="Age", ylab="Chd")
+lines(CHDdata$AGE, glmCHD$fitted, type="l", col="red", lwd=3)
+```
+
+In the sequel we will need the coefficients $b_0, b_1$  of the fitted logistic curve. We store them in two conveniently named variables as follows:
+  
+```{r}
+(b0 = glmCHD$coefficients[1])
+(b1 = glmCHD$coefficients[2])
+```
+
+## Finding a confidence interval for $\beta$ and $\pi$
+
+
+### Wald statistic.
+
+The numerator and denominator of the Wald test statistic 
+\[
+\dfrac{\hat\beta_1}{SE(\hat\beta_1)}
+\]
+can be obtained from the model summary. This model summary has a component called `coefficients` which is just a (named) R matrix: 
+```{r}
+summGlmCHD$coefficients
+```
+Thus we get the numerator of the Wald statistic W as:
+```{r}
+(numW = summGlmCHD$coefficients[2, 1])
+```
+The bracket notation is standard R code for accessing elements of a matrix. Here `[2, 1]` means second row, first column. The denominator is similar:
+```{r}
+(denomW = summGlmCHD$coefficients[2, 2])
+```
+And the Wald statistic is 
+```{r}
+(W = numW / denomW)
+```
+(or you can get it as the `[2, 3]` element in the matrix). The corresponding p-value is provided in the summary as
+```{r}
+(denomW = summGlmCHD$coefficients[2, 4])
+```
+Alternatively you can obtain it using the normal distribution directly:
+```{r}
+2 * pnorm(W, lower.tail = FALSE)
+```
+We multiplied by 2 because this is a two-tailed test for the null hypothesis $H_0=\{\beta_1 = 0\}$.
+
+### Variance - covariance matrix.
+
+The variance-covariance matrix of the logistic model can be obtained with:
+
+```{r}
+(vcovCHD = vcov(glmCHD))
+```
+Note that the order of the variables in the matrix rows and columns is reversed with respect to the Stata output in the course lectures.
+
+
+We can check that the square root of the diagonal elements of the variance-covariance matrix are the standard errors that appear in the coefficients matrix of the model summary:
+```{r}
+sqrt(diag(vcovCHD))
+```
+The same numbers appeared as standard errors in the second column of the coefficient matrix for the model summary (use `[ ,2]` to select the second column of a matrix in R)  
+```{r}
+summGlmCHD$coefficients[ , 2]
+```
+
+## Confidence intervals
+
+### Confidence intervals for the $\beta$
+
+These are provided by the `confint.default` function:
+```{r}
+confint.default(glmCHD)
+```
+
+### Confidence interval for the logit and probability with $x=60$  
+
+We begin by predicting the value of the logit for $x=60$. We use the `predict` function for that. The value to be predicted is provided as a `data.frame` via the `newdata` argument of `predict`. I'll explain the type="link" argument below.
+```{r}
+(logitX = predict(glmCHD, newdata = data.frame(AGE=60), type = "link"))
+```
+(suffice it to say now that if you omit it, you will get the same result). Alternatively we can also directly do:
+```{r}
+x = 60
+glmCHD$coefficients[1] + glmCHD$coefficients[2] * x
+```
+Don't worry about the `(Intercept)` label that appears here. R is just keeping it because we started from a named vector. 
+
+Now we can get the predicted probability directly using the exponential:
+```{r}
+exp(logitX) / (1 + exp(logitX))
+```
+
+Alternatively, we can change the `type` argument of `predict` to `response`
+```{r}
+(probX = predict(glmCHD, newdata = data.frame(AGE=60), type = "response"))
+```
+As you see, the `type` argument controls whether we get an answer in the logit scale or in the probability scale (with `link`, which is the default and therefore can be omitted). 
+
+
+Now let's move to the confidence intervals for the probability. 
+
+If you want to reproduce the direct computation of the variance for the logit when $x= 60$ (see slide 11 in the pdf for the lecture notes) then you can proceed as follows:
+
+```{r}
+vcovCHD[1, 1] + x^2 * vcovCHD[2, 2] + 2 * x * vcovCHD[1, 2]
+```
+Note that there is a small difference with the result 0.16784 that appears in the slides. Besides if you are like me  and you like matrix algebra :) then the same result is obtained as follows: 
+
+```{r}
+t(c(1, x)) %*% vcovCHD %*% c(1, x)
+```
+`t` is for transpose, and `%*%` is for matrix product. 
+
+We can however do the same in a more natural way using again the `predict` fucntion with the argument `se.fit=TRUE` (and response in the logit scale). 
+
+```{r}
+(predX = predict(glmCHD, newdata = data.frame(AGE=60), type = "link", se.fit = TRUE))
+```
+As you can see this tells R to include the standard error of the predicted value in the answer. The standard error can be accessed as:
+```{r}
+predX$se.fit
+```
+To recover the value of the variance for the logit (at $x=60$) simply square this standard error
+```{r}
+predX$se.fit^2
+```
+
+Thus we are ready to compute the confidence interval for the logit when $x=60$. 
+
+```{r}
+(intervalLogitX = logitX + c(-1, 1) * predX$se.fit * qnorm(0.025, lower.tail = F))
+```
+Some explanations about this formula:
+
++ `qnorm` provides the quantiles for the normal distribution (the $z_{1 - \alpha/2}\approx 1.96$ in the lecture slides):
+```{r echo=FALSE, eval=FALSE}
+qnorm(0.025, lower.tail = F)
+```
++ The part with `c(-1, 1)` is just a trick to use the vector arithmetic of R to get both endpoints of the confidence interval at the same time. The -1 gives the lower endpoint, the 1 gives the upper one.   
+
+The confidence interval for the probability can be obtained directly as follows: 
+
+```{r}
+exp(intervalLogitX) / (1 + exp(intervalLogitX) )
+```
+
+But the function 
+$$f(u) = \dfrac{e^u}{ 1 + e^u}$$
+can be easily obtained in R with `plogis`, and so we get the same result if we do:
+ 
+```{r}
+plogis(intervalLogitX)
+```
+
+##  The multiple logistic regression model
+
+###  Fitting the multiple logistic model: low birth weight study I
+
+
+#### Loading and exploring the data
+
+For this part of the lecture we will be working with a new data set and a new model, so we begin by removing all the previous results from R memory. We can do this with this command:
+
+```{r}
+rm(list = ls())
+```
+
+Now we are ready to read the data
+
+```{r}
+LOWBWTdata = read.table("./data/LOWBWT.txt", header = TRUE)
+
+head(LOWBWTdata)
+```
+
+Now, in this case we have to be careful because the `RACE` categorical variable has been coded with integer numbers. You can ask R about the type of variable as follows: 
+
+```{r}
+typeof(LOWBWTdata$RACE)
+```
+
+But it is much better to consider `RACE` as a factor. Fortunately, it is very easy to convert the variable into a factor:
+ 
+```{r}
+LOWBWTdata$RACE = as.factor(LOWBWTdata$RACE)
+```
+
+The main advantage for us is that if R considers `RACE` to be a factor then it will automatically include the appropriate dummy variables in the logistic regression model (however, as usual in R, if you keep `RACE` as an integer you can code the dummy variables by hand if you want). Another way to achieve the same result is to use the argument `colClasses` of `read.table` to set the class of the variables while reading them from the file.
+
+To find the number of women for each value of low do:
+```{r}
+table(LOWBWTdata$LOW)
+```
+
+By the way, if you want to get the summary tables that appear in the lecture notes you may use this code (I'm not describing the details): 
+
+For `LOW = 0`
+```{r}
+t(apply(LOWBWTdata[LOWBWTdata$LOW==0 , c(3, 4, 10)], MARGIN = 2, FUN = function(x)c(LENGTH = length(x), MEAN = mean(x), SD = sd(x), MIN = min(x), MAX= max(x))))
+```
+For `LOW = 1`
+```{r}
+t(apply(LOWBWTdata[LOWBWTdata$LOW==1 , c(3, 4, 10)], MARGIN = 2, FUN = function(x)c(LENGTH = length(x), MEAN = mean(x), SD = sd(x), MIN = min(x), MAX= max(x))))
+```
+It's not the more elegant or efficient  way to do this but it is straightforward and it works in this case.
+
+A very basic  table of `LOW` by `RACE` can be obtained simply with:
+
+```{r}
+table(LOWBWTdata$LOW, LOWBWTdata$RACE)
+```
+
+But if you want a fancier table you can install the `gmodels` library with
+
+```{r eval=FALSE}
+install.packages("gmodels"")
+```
+In a normal R setup this will download and automatically install the library from the default R repository for your system. 
+
+Then we load the library and use the `CrossTable` function
+```{r}
+library(gmodels)
+CrossTable(LOWBWTdata$LOW, LOWBWTdata$RACE, format = "SPSS", prop.chisq = F)
+```
+
+But if you prefer a solution within base R, you can try something like this:
+
+```{r}
+addmargins(100 * prop.table(table(LOWBWTdata$LOW, as.numeric(LOWBWTdata$RACE)), margin = 1))
+```
+Set `margin = 2` in the above command to get the column percents (in general, in R margin 1 refers to rows, margin 2 refers to columns).
+
+
+#### Fitting the model with `glm`
+
+The syntax for fitting the model is similar to the case where we had only one predictor variable:
+
+```{r}
+glmLOWBWT = glm(LOW ~ AGE + LWT + RACE + FTV, family = binomial(link = "logit"), data = LOWBWTdata)
+(summGlmLOWBWT = summary(glmLOWBWT))
+```
+
+Note the syntax for the model formula where the explanatory models included in the model appear as a sum, with ine term for each variable. The summary output for the model shows the deviance for the fitted model and for the null (naïve or constant) model. The deviance is computed up to a constant, assuming that the deviance of a saturated model is 0.  If we want to get the log likelihood of the fitted model we can use the `logLil` function: 
+
+```{r}
+logLik(glmLOWBWT)
+```
+
+We can compute the likelihood ratio as the difference of the deviances:
+
+```{r}
+(LikRatio = summGlmLOWBWT$null.deviance - summGlmLOWBWT$deviance)
+```
+To compute the p-value we firts obtain the degrees of freedom:
+```{r}
+(df = summGlmLOWBWT$df.null - summGlmLOWBWT$df.residual)
+```
+and now use the distribution function of a chi square variable with those degrees of freedom to get the p-value of a one-tail test (right tail). 
+```{r}
+(pValue = pchisq(LikRatio, lower.tail = FALSE, df))
+```
+
+The confidence intervals for the coefficients of the model can be obtained with:
+```{r}
+confint.default(glmLOWBWT)
+```
+
+
+#### The reduced model
+
+The model without  obtained with:
+```{r}
+glmLOWBWTred = glm(LOW ~ LWT + RACE, family = binomial(link = "logit"), data = LOWBWTdata)
+(summGlmLOWBWTred = summary(glmLOWBWTred))
+```
+
+And you can compare them as follows:
+```{r}
+(LikRatio = glmLOWBWTred$deviance - glmLOWBWT$deviance)
+(df = summGlmLOWBWTred$df.residual - summGlmLOWBWT$df.residual)
+(pValue = pchisq(LikRatio, lower.tail = FALSE, df))
+```
+
+
+
+
+#######################################
+
+```{r echo=FALSE, eval=FALSE}
+I found the book datasets on theWiley website
+http://wiley.mpstechnologies.com/wiley/BOBContent/searchLPBobContent.do
+entered the following ISBN number
+9780470582473  and click the Search button
+Then click the link that results for the ISBN
+There were 10 datasets, each with the .txt file and the codesheet available and so far they are working well with the Stata software.
+I could import the .txt files fine but I think at least one of the code sheets may have miscoded the ICU variable STA (status) with reversed 0 and 1 for dead and alive at discharge. It always makes sense to run exploratory descriptives on variables first
+```
+
