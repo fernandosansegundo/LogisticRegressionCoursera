@@ -147,7 +147,7 @@ Alternatively, we can change the `type` argument of `predict` to `response`
 ```{r}
 (probX = predict(glmCHD, newdata = data.frame(AGE=60), type = "response"))
 ```
-As you see, the `type` argument controls whether we get an answer in the logit scale or in the probability scale (with `link`, which is the default and therefore can be omitted). 
+As you see, the `type` argument controls whether we get an answer in the logit scale (with `type="link"`, which is the default and therefore can be omitted) or in the probability scale (with `type="response"`). 
 
 
 Now let's move to the confidence intervals for the probability. 
@@ -266,7 +266,7 @@ table(LOWBWTdata$LOW, LOWBWTdata$RACE)
 But if you want a fancier table you can install the `gmodels` library with
 
 ```{r eval=FALSE}
-install.packages("gmodels"")
+install.packages("gmodels")
 ```
 In a normal R setup this will download and automatically install the library from the default R repository for your system. 
 
