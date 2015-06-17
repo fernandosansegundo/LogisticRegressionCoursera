@@ -1,0 +1,204 @@
+---
+title: "Logistic Regression. Week05"
+author: "Course Notes by Fernando San Segundo"
+date: "May 2015"
+output: 
+  html_document:
+    toc: true 
+---
+
+```{r echo=FALSE, eval=FALSE}
+opts_chunk$set(comment=NA, fig.width=6, fig.height=6)
+```
+
+## Introduction
+
+These are my notes for the lectures of the [Coursera course "Introduction to Logistic Regression"](https://class.coursera.org/logisticregression-001/) by Professor Stanley Lemeshow. The goal of these notes is to provide the R code to obtain the same results as the Stata code in the lectures. Please read the *Preliminaries* of the code for lecture 1 for some details.
+
+#### R code for previous lectures:
+
++ [Lecture 1.](https://rpubs.com/fernandosansegundo/82655)
++ [Lecture 2.](https://rpubs.com/fernandosansegundo/82577)
++ [Lecture 3.](https://rpubs.com/fernandosansegundo/83577)
++ [Lecture 4.](https://rpubs.com/fernandosansegundo/LogisticRegression04)
+
+#### <font color="red">Warning about the data sets:</font> 
+
+In some cases, the lecture slides contain examples where the original data is not available. In those cases, I have tried to do my best to find an equivalent example, using the data sets  available for the course and resorting to the examples provided in the book "Applied Logistic Regression". 
+
+#### Github repository for the code:
+
+[https://github.com/fernandosansegundo/LogisticRegressionCoursera](https://github.com/fernandosansegundo/LogisticRegressionCoursera)
+
+# Statistical Adjustment
+
+Slides 7 to 12 of the pdf  for this weeks lecture contain an example where a logistic model is apllied to data consisting of two group of 50 men each, with the following contingency table:
+
+\[
+  	\begin{array}{cc}
+     & X\\
+     & \begin{array}{cc}X = 0 & X = 1\\ Group 1 & Group 2 \end{array}\\
+    Y &
+        \begin{array}{|c|c|}\hline\qquad 35\qquad &\qquad 15\qquad\\\hline \qquad 10\qquad & \qquad 40\qquad\\\hline \end{array}\\
+    \\
+    \bar a: &   
+		\end{array}
+\]
+
+
+```{r eval=FALSE}
+library(MASS)
+set.seed(2015)
+group1 = mvrnorm(n=50, mu = 40.18, Sigma = 0.5, empirical = TRUE)
+group2 = mvrnorm(n=50, mu = 48.45, Sigma = 0.5, empirical = TRUE)
+age = c(group1, group2) 
+(X = rep(0:1, rep(50, 2)))
+
+
+simData = data.frame(rep(1, 100), X, age)
+table(simData$Y, simData$X)
+tapply(simData$age, simData$X, mean)
+
+summary(glm(Y ~ X + age, family = binomial(link = "logit"), data = simData))
+
+
+probLogist = function(X) {
+  exp(-4.739 + 1.559 * X[1] + 0.096 * X[2]) / (1 + exp(-4.739 + 1.559 * X[1] + 0.096 * X[2]))
+  }
+
+DM = cbind(rep(1, nrow(simData)),simData$X, simData$age)
+piVals = apply(simData[, 2:3], MARGIN = 1, probLogist) 
+(vcM = solve(t(DM) %*% diag(piVals * (1 - piVals)) %*% DM))
+
+sqrt(diag(vcM))
+
+
+
+table(Y0, simData$X)
+
+
+library(asypow)
+info.mvlogistic(c(-4.739, 1.559 , 0.096), as.matrix(simData))
+
+
+CHDdata = read.table("./data/CHDAGE.txt", header = TRUE)
+glmCHD1 = glm(CHD ~ SEX, family = binomial(link = "logit"), CHDdata)
+(summGlmCHD = summary(glmCHD))
+(vcovCHD = vcov(glmCHD))
+
+DM = cbind(rep(1, nrow(CHDdata)),CHDdata$AGE)
+piVals = glmCHD$fitted.values
+
+(infoM = t(DM) %*% diag(piVals * (1 - piVals)) %*% DM)
+solve(infoM)
+
+sum(piVals * (1 - piVals))
+
+v = piVals * (1 - piVals)
+
+sum(DM[ , 2] * v * DM[ , 1])
+
+
+
+library(ROCR)
+
+predLogistica = prediction(predictions = piVals, labels = Y)
+
+
+
+
+
+
+
+```
+
+
+
+In the first part of the lecture we will be working with the Low Birth Weight data set, so we begin by loading it into a data.frame.
+
+```{r}
+GLOWdata = read.table("./data/GLOW500.txt", header = TRUE)
+names(GLOWdata)
+
+GLOWdata$PRIORFRAC_f = as.factor(GLOWdata$PRIORFRAC) 
+
+```
+
+
+
+```{r}
+(groupTable = table(GLOWdata$FRACTURE, GLOWdata$PRIORFRAC_f))
+(groupMeanHeight = tapply(GLOWdata$HEIGHT, INDEX = GLOWdata$PRIORFRAC_f, mean))
+(diffMeanHeight = diff(groupMeanHeight))
+```
+
+
+```{r}
+(tableOR = (groupTable[1,1] * groupTable[2, 2]) / (groupTable[1,2] * groupTable[2, 1]))
+```
+
+ 
+```{r}
+GLOW1 = glm(FRACTURE ~  PRIORFRAC_f, family = binomial(link = "logit"), data = GLOWdata)
+(summGLOW1 = summary(GLOW1))
+
+GLOW2 = glm(FRACTURE ~  PRIORFRAC_f + HEIGHT, family = binomial(link = "logit"), data = GLOWdata)
+(summGLOW2 = summary(GLOW2))
+
+GLOW3 = glm(FRACTURE ~  PRIORFRAC_f * HEIGHT, family = binomial(link = "logit"), data = GLOWdata)
+(summGLOW3 = summary(GLOW3))
+
+
+GLOW3a = glm(FRACTURE ~  PRIORFRAC_f + HEIGHT + PRIORFRAC_f : HEIGHT, family = binomial(link = "logit"), data = GLOWdata)
+(summGLOW3a = summary(GLOW3a))
+```
+
+
+```{r}
+(crudeORGLOW2 = exp(summGLOW2$coefficients[2, 1] + summGLOW2$coefficients[3, 1] * diffMeanHeight))
+```
+
+
+## Myopia data
+
+
+```{r}
+MYOPIA = read.table("./data/MYOPIA.txt", header = TRUE)
+  names(MYOPIA)
+MYOPIA$GENDER_f = as.factor(MYOPIA$GENDER) 
+```
+
+
+```{r}
+MYOPIA1 = glm(MYOPIC ~  GENDER , family = binomial(link = "logit"), data = MYOPIA)
+(summMYOPIA1 = summary(MYOPIA1))
+
+
+MYOPIA2 = glm(MYOPIC ~  GENDER + SPHEQ, family = binomial(link = "logit"), data = MYOPIA)
+(summMYOPIA2 = summary(MYOPIA2))
+
+MYOPIA3 = glm(MYOPIC ~  GENDER * SPHEQ , family = binomial(link = "logit"), data = MYOPIA)
+(summMYOPIA3 = summary(MYOPIA3))
+
+```
+
+
+
+
+
+
+
+---
+
+Thanks for your attention!
+
+
+
+```{r echo=FALSE, eval=FALSE}
+## Additional references (books and web sites): 
+
+1. https://stat.ethz.ch/pipermail/r-help/2006-October/115258.html
+2. http://www.inside-r.org/packages/cran/epitools/docs/expand.table
+```
+
+
