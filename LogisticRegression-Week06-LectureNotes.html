@@ -76,7 +76,7 @@ img {
 <li><a href="#homogeneity-test-of-the-or-across-strata-based-on-weighted-sum-of-squared-deviations.">Homogeneity test of the OR across strata, based on weighted sum of squared deviations.</a><ul>
 <li><a href="#breslow-day">Breslow-Day</a></li>
 </ul></li>
-<li><a href="#homogeneity-analsis-through-logistic-regression">Homogeneity analsis through logistic regression</a></li>
+<li><a href="#homogeneity-analysis-through-logistic-regression">Homogeneity analysis through logistic regression</a></li>
 </ul>
 </div>
 
@@ -310,8 +310,8 @@ HomogTest(OR.logit.LOWBWT)</code></pre>
 ## 3.0863813 2.9227163 2.0000000 0.2319211 </code></pre>
 </div>
 </div>
-<div id="homogeneity-analsis-through-logistic-regression" class="section level1">
-<h1>Homogeneity analsis through logistic regression</h1>
+<div id="homogeneity-analysis-through-logistic-regression" class="section level1">
+<h1>Homogeneity analysis through logistic regression</h1>
 <p>In order to use logistic regression for the homogeneity analysis we are going to build the three models described in the lecture. This modelling step is already well known to us, so I proceed directly to get the results shown in the lecture pdf:</p>
 <p>The first (<em>crude</em>) model is the one without the variable <code>RACE</code>:</p>
 <pre class="r"><code>model1 = glm(LOW ~  SMOKE, family = binomial(link = &quot;logit&quot;), data = LOWBWT)

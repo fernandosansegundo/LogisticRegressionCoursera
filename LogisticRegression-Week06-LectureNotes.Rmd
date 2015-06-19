@@ -222,7 +222,7 @@ We can get that code into R directly from the URL using `source`. **BUT BE CAREF
 ```
 
 
-# Homogeneity analsis through logistic regression
+# Homogeneity analysis through logistic regression
 
 In order to use logistic regression for the homogeneity analysis we are going to build the three models described in the lecture. This modelling step is already well known to us, so I proceed directly to get the results shown in the lecture pdf:
 
