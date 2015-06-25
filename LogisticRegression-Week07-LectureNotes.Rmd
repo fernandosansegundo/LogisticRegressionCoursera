@@ -304,8 +304,8 @@ This makes me think that the difference is in the method used for the definition
 **Update: ** I think that using this code to define the decilic risk classes will reproduce the results in the `hoslem.test`function.
 
 ```{r eval=FALSE, comment=NULL}
-g = 10
-(cutPoints = quantile(yhat, probs=seq(0, 1, 1/g))
+g=10
+(cutPoints = quantile(fitted(glmLOWBWT), probs=seq(0, 1, 1/g)))
 LOWBWT$riskDecile = cut(fitted(glmLOWBWT), breaks = cutPoints, include.lowest = TRUE, right = TRUE)
 ```
 

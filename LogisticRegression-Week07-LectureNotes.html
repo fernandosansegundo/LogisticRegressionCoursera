@@ -642,8 +642,8 @@ abline(a = 0, b=1)</code></pre>
 ## yhat1       8.30865      9.840911</code></pre>
 <p>This makes me think that the difference is in the method used for the definition of the decilic classes. But I have not had the chance to find out what definition of decilic classes is being used in the <code>hoslem.test</code> function.</p>
 <p><strong>Update: </strong> I think that using this code to define the decilic risk classes will reproduce the results in the <code>hoslem.test</code>function.</p>
-<pre class="r"><code>g = 10
-(cutPoints = quantile(yhat, probs=seq(0, 1, 1/g))
+<pre class="r"><code>g=10
+(cutPoints = quantile(fitted(glmLOWBWT), probs=seq(0, 1, 1/g)))
 LOWBWT$riskDecile = cut(fitted(glmLOWBWT), breaks = cutPoints, include.lowest = TRUE, right = TRUE)</code></pre>
 </div>
 </div>
