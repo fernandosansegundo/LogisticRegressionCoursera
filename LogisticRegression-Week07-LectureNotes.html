@@ -149,7 +149,7 @@ img {
 <p>This result is used on page 21 of the lecture pdf to compute the Pearson <span class="math">\(\chi^2\)</span> statistic.</p>
 <div id="using-epi.cp" class="section level2">
 <h2>Using <code>epi.cp</code></h2>
-<p>Though the above manual solution can be used for our purposes sometimes you may prefer a more complete and safer approach, using the function <code>epi.cp</code> provided by the <code>epiR</code> library (remember to install it if you haven’t already). The result is a list with two components, where the first one (called <code>cov.pattern</code>) is a data frame with information about the the covariate patterns. I’ll just show you the first and last rows of the data frame (check the <a href="http://artax.karlin.mff.cuni.cz/r-help/library/epiR/html/epi.cp.html">help for the function</a> if you want to know more details).</p>
+<p>Though the above manual solution can be used for our purposes sometimes you may prefer a more complete and safer approach, using the function <code>epi.cp</code> provided by the <code>epiR</code> library (remember to install it if you haven’t already). This function returns a list with two components, where the first one (called <code>cov.pattern</code>) is a data frame with information about the the covariate patterns. I’ll just show you the first and last rows of the data frame (check the <a href="http://artax.karlin.mff.cuni.cz/r-help/library/epiR/html/epi.cp.html">help for the function</a> if you want to know more details).</p>
 <pre class="r"><code>library(epiR)</code></pre>
 <pre><code>## Loading required package: survival
 ## Package epiR 0.9-62 is loaded
@@ -211,7 +211,7 @@ head(CovPatt)</code></pre>
 ## 153   0  95 White   43</code></pre>
 <p>and as the previous table shows, you can see that two of them have <code>LOW==0</code> while the remaining one has <code>LOW==1</code>. Thus the <span class="math">\(y_j\)</span> are the values that appear in the second row of the table.</p>
 <pre class="r"><code>CovPatt$yj = tapply(LOWBWT$LOW, LOWBWT$cpId, FUN = sum)</code></pre>
-<p>And we can check thattheir sum equals the number of subjects with <span class="math">\(y=1\)</span> (recall <span class="math">\(y\)</span> is <code>LOW</code>):</p>
+<p>And we can check that their sum equals the number of subjects with <span class="math">\(y=1\)</span> (recall <span class="math">\(y\)</span> is <code>LOW</code>):</p>
 <pre class="r"><code>sum(CovPatt$yj)</code></pre>
 <pre><code>## [1] 59</code></pre>
 <pre class="r"><code>sum(LOWBWT$LOW)</code></pre>
@@ -260,10 +260,10 @@ head(LOWBWT$fit)</code></pre>
 ## 0.0588741 0.1680520 0.2228100 0.2531445 0.2707990 0.2955066 0.3334446 
 ##       70%       80%       90%      100% 
 ## 0.3680909 0.4078256 0.4769704 0.5974751</code></pre>
-<p>Now that the cut points for the deciles have been selected we use <code>cut</code> to define a factor <code>riskDecile</code> that classifies the values of the fitted probabilities into decilic classes and add the factor to the data frame. Here again we have to be careful. The <code>cut</code> function has two optional arguments that determine the resulting classification.</p>
+<p>Now that the cut points for the deciles have been selected we use <code>cut</code> to define a factor <code>riskDecile</code> that classifies the values of the fitted probabilities into decilic classes. Then we add the factor to the data frame. Here again we have to be careful. The <code>cut</code> function has two optional arguments that determine the resulting classification:</p>
 <ul>
-<li>the argument <code>right</code> is used to decide whether the decili classes are right-closed (and left-open) intervals or viceversa.</li>
-<li>the argument <code>include.lowest</code> makes the first (or last, depending on <code>right</code>) interval be closed, to include the boundary points of the data set.</li>
+<li>The argument <code>right</code> is used to decide whether the decilic classes are right-closed (and left-open) intervals or viceversa.</li>
+<li>The argument <code>include.lowest</code> makes the first (or last, depending on <code>right</code>) interval be closed, to include the boundary points of the data set.</li>
 </ul>
 <p>In the code below these arguments are set to reproduce the results obtained with Stata that appear in the lecture pdf. If you want to reproduce the Systat results change <code>right=TRUE</code> to <code>right=FALSE</code>.</p>
 <pre class="r"><code>LOWBWT$riskDecile = cut(fitted(glmLOWBWT), breaks = cutPoints, include.lowest = TRUE, right = TRUE)
@@ -273,7 +273,7 @@ table(LOWBWT$riskDecile)</code></pre>
 ##             19             21             17             19             19 
 ##  (0.296,0.333]  (0.333,0.368]  (0.368,0.408]  (0.408,0.477]  (0.477,0.597] 
 ##             19             23             15             20             17</code></pre>
-<p>Now the values of <code>LOW</code> for the observations in each decilic class are sumed to obtain the observed values of <span class="math">\(y=1\)</span>. The <code>tapply</code> is the tool for this job, appplying an operation (the sum in this case) across the values of a factor.</p>
+<p>Next the values of <code>LOW</code> for the observations in each decilic class are sumed to obtain the observed values of <span class="math">\(y=1\)</span>. The <code>tapply</code> function is the tool for this job, applying an operation (the sum in this case) across the values of a factor.</p>
 <pre class="r"><code>(Obs1 = with(LOWBWT, tapply(LOW, INDEX = riskDecile, FUN = sum)) )</code></pre>
 <pre><code>## [0.0589,0.168]  (0.168,0.223]  (0.223,0.253]  (0.253,0.271]  (0.271,0.296] 
 ##              2              4              5              4              8 
@@ -568,7 +568,7 @@ Total
 </table>
 <div id="plot-of-the-observed-vs-expected-pairs" class="section level4">
 <h4>Plot of the observed vs expected pairs</h4>
-<p>We can use the above results to get this plot. I have labeled the points withthe number of the correspondng decilic class to make it easier to check which ones fall far from the diagonal line. The</p>
+<p>We can use the above results to get this plot. I have labeled the points with the number of the correspondng decilic class to make it easier to check which ones fall far from the diagonal line.</p>
 <pre class="r"><code>(maxX = max(c(range(Obs1), range(Exp1))))</code></pre>
 <pre><code>## [1] 12</code></pre>
 <pre class="r"><code>plot(c(0, maxX), c(0, maxX), asp=1, type=&quot;l&quot;, xlab=&quot;Observed y=1&quot;, ylab=&quot;Expected y=1&quot;)
@@ -603,7 +603,7 @@ abline(a = 0, b=1)</code></pre>
 </div>
 <div id="hosmer-lemeshow-test" class="section level1">
 <h1>Hosmer-Lemeshow test</h1>
-<p>To define the Hosmer - Lemeshow statistic we will use the first grouping startegy described in the lecture pdf. This means that we can directly use the <span class="math">\(2\times J\)</span> contingency table of observed and expected values for decilic classes that we constructed before. The Hosmer - Lemeshow statistic is:</p>
+<p>To define the Hosmer - Lemeshow statistic we will use the first grouping strategy described in the lecture pdf. This means that we can directly use the <span class="math">\(2\times J\)</span> contingency table of observed and expected values for decilic classes that we constructed before. The Hosmer - Lemeshow statistic is:</p>
 <pre class="r"><code>(HL.statistic = sum((Obs1 - Exp1)^2/Exp1) + sum((Obs0 - Exp0)^2/Exp0))</code></pre>
 <pre><code>## [1] 7.606831</code></pre>
 <p>Check against the Stata result on page 21. The degrees of freedom are:</p>
@@ -614,28 +614,37 @@ abline(a = 0, b=1)</code></pre>
 <pre><code>## [1] 0.4727863</code></pre>
 <div id="using-the-resourceselection-library" class="section level3">
 <h3>Using the <code>ResourceSelection</code> library</h3>
-<p>If you <a href="google%20for" title="R Hosmer Lemeshow test"><a href="https://www.google.es/search?q=R+Hosmer+Lemeshow+test" class="uri">https://www.google.es/search?q=R+Hosmer+Lemeshow+test</a></a> you will come across the <code>ResourceSelection</code> library. The library includes a <code>hoslem.test</code> function to perform the Hosmer - Lemeshow test. The result in our case is:</p>
+<p>If you <a href="https://www.google.es/search?q=R+Hosmer+Lemeshow+test">google for “R Hosmer Lemeshow test”</a> you will come across the <code>ResourceSelection</code> library. The library includes a <code>hoslem.test</code> function to perform the Hosmer - Lemeshow test. The result in our case is:</p>
 <pre class="r"><code>library(ResourceSelection)</code></pre>
 <pre><code>## ResourceSelection 0.2-4   2014-05-19</code></pre>
-<pre class="r"><code>(HL= hoslem.test(LOWBWT$LOW, fitted(glmLOWBWT), g = 9))</code></pre>
+<pre class="r"><code>(HL= hoslem.test(LOWBWT$LOW, fitted(glmLOWBWT)))</code></pre>
 <pre><code>## 
 ##  Hosmer and Lemeshow goodness of fit (GOF) test
 ## 
 ## data:  LOWBWT$LOW, fitted(glmLOWBWT)
-## X-squared = 7.5851, df = 7, p-value = 0.3706</code></pre>
+## X-squared = 9.4643, df = 8, p-value = 0.3047</code></pre>
 <p>And as you can see the results are slightly different from what we got. The output of the function also includes a table of observed and expected values (I have rearranged the rows to make them look similar to the table in the pdf for this lecture)</p>
 <pre class="r"><code>t(cbind(HL$observed, HL$expected))[c(1, 3, 2, 4), ]</code></pre>
-<pre><code>##       [0.0589,0.175] (0.175,0.23] (0.23,0.261] (0.261,0.282] (0.282,0.325]
-## y0         18.000000    18.000000    15.000000     14.000000      14.00000
-## yhat0      17.465398    17.466183    15.879273     15.320544      14.65804
-## y1          2.000000     4.000000     6.000000      7.000000       7.00000
-## yhat1       2.534602     4.533817     5.120727      5.679456       6.34196
-##       (0.325,0.363] (0.363,0.404] (0.404,0.46] (0.46,0.597]
-## y0        16.000000     19.000000     7.000000      9.00000
-## yhat0     15.108147     14.251976    10.155259      9.69518
-## y1         7.000000      4.000000    11.000000     11.00000
-## yhat1      7.891853      8.748024     7.844741     10.30482</code></pre>
+<pre><code>##       [0.0589,0.168] (0.168,0.223] (0.223,0.254] (0.254,0.271]
+## y0         17.000000     17.000000     12.000000     15.000000
+## yhat0      16.633482     16.751683     12.969796     13.990085
+## y1          2.000000      4.000000      5.000000      4.000000
+## yhat1       2.366518      4.248317      4.030204      5.009915
+##       (0.271,0.296] (0.296,0.333] (0.333,0.368] (0.368,0.406]
+## y0        11.000000     12.000000     18.000000     12.000000
+## yhat0     13.579677     10.895268     16.768308      8.561261
+## y1         8.000000      4.000000      8.000000      2.000000
+## yhat1      5.420323      5.104732      9.231692      5.438739
+##       (0.406,0.467] (0.467,0.597]
+## y0          7.00000      9.000000
+## yhat0      10.69135      9.159089
+## y1         12.00000     10.000000
+## yhat1       8.30865      9.840911</code></pre>
 <p>This makes me think that the difference is in the method used for the definition of the decilic classes. But I have not had the chance to find out what definition of decilic classes is being used in the <code>hoslem.test</code> function.</p>
+<p><strong>Update: </strong> I think that using this code to define the decilic risk classes will reproduce the results in the <code>hoslem.test</code>function.</p>
+<pre class="r"><code>g = 10
+(cutPoints = quantile(yhat, probs=seq(0, 1, 1/g))
+LOWBWT$riskDecile = cut(fitted(glmLOWBWT), breaks = cutPoints, include.lowest = TRUE, right = TRUE)</code></pre>
 </div>
 </div>
 <div id="roc-curve-and-discrimination" class="section level1">
@@ -654,7 +663,7 @@ abline(a = 0, b=1)</code></pre>
 <pre class="r"><code>LOWBWT.pred = prediction(predictions = glmLOWBWT$fitted.values, labels = LOWBWT$LOW)</code></pre>
 <p>Using this prediction object we can ask <code>ROCR</code> to compute a series of performance measures for the logistic model classifier. In order to do that we use a function called precisely <code>performance</code>. It can be used for example to obtain vectors of values of sensibility (true positive rate) or specificity (false positive rate) for different cutoff values.</p>
 <pre class="r"><code>sens = performance(LOWBWT.pred, measure = &quot;sens&quot;)</code></pre>
-<p>Before going further, some remarks are in order. R, as object oriented language, has two systems of classes, called S3 and S4. The result of calling <code>performance</code> ia an object of type S4, consisting of <em>slots</em>. We can access these slots using @ (instead of the familiar $). For example, to access the cutoff values we use:</p>
+<p>Before going further, some remarks are in order. R, as an object oriented language, has two systems of classes, called S3 and S4. The result of calling <code>performance</code> ia an object of type S4, consisting of <em>slots</em>. We can access these slots using @ (instead of the familiar $). For example, to access the cutoff values we use:</p>
 <pre class="r"><code>cutoffs = sens@x.values[[1]]
 head(cutoffs)</code></pre>
 <pre><code>##                  76        43        35       133        90 
@@ -692,7 +701,7 @@ abline(a=0, b=1, lwd=3, lty=&quot;dashed&quot;)</code></pre>
 AUC@y.values</code></pre>
 <pre><code>## [[1]]
 ## [1] 0.6473272</code></pre>
-<p>Note that the curve taht appears on page 31 of the lecture pdf is <strong>not</strong> the ROC curve for the <code>LOWBWT</code> logistic model in this lecture.</p>
+<p>Note that the curve that appears on page 31 of the lecture pdf is <strong>not</strong> the ROC curve for the <code>LOWBWT</code> logistic model in this lecture.</p>
 <hr />
 <p>Thanks for your attention!</p>
 </div>

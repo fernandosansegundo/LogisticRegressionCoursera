@@ -73,7 +73,7 @@ This result is used on page 21 of the lecture pdf to compute the Pearson $\chi^2
 
 ## Using `epi.cp`
 
-Though the above manual solution can be used for our purposes sometimes you may prefer a more complete and safer approach, using the function `epi.cp` provided by the `epiR` library (remember to install it if you haven't already).  The result is a list with two components, where the first one (called `cov.pattern`) is a data frame with information about the the covariate patterns. I'll just show you the first and last rows of the data frame (check the [help for the function](http://artax.karlin.mff.cuni.cz/r-help/library/epiR/html/epi.cp.html) if you want to know more details). 
+Though the above manual solution can be used for our purposes sometimes you may prefer a more complete and safer approach, using the function `epi.cp` provided by the `epiR` library (remember to install it if you haven't already).  This function returns a list with two components, where the first one (called `cov.pattern`) is a data frame with information about the the covariate patterns. I'll just show you the first and last rows of the data frame (check the [help for the function](http://artax.karlin.mff.cuni.cz/r-help/library/epiR/html/epi.cp.html) if you want to know more details). 
 
 ```{r}
 library(epiR)
@@ -117,7 +117,7 @@ CovPatt$yj = tapply(LOWBWT$LOW, LOWBWT$cpId, FUN = sum)
 ```
 
 
-And we can check thattheir sum equals the number of subjects with $y=1$ (recall $y$ is `LOW`):
+And we can check that their sum equals the number of subjects with $y=1$ (recall $y$ is `LOW`):
 
 ```{r}
 sum(CovPatt$yj)
@@ -148,10 +148,10 @@ To define the deciles we are going to use the `quantile` function. This is alway
 (cutPoints = quantile(fitted(glmLOWBWT),probs = (0:10)/10, type = 6))
 ```
 
-Now that the cut points for the deciles have been selected we use `cut` to define a factor `riskDecile` that classifies the values of the fitted probabilities into decilic classes and add the factor to the data frame. Here again we have to be careful. The `cut` function has two optional arguments that determine the resulting classification.
+Now that the cut points for the deciles have been selected we use `cut` to define a factor `riskDecile` that classifies the values of the fitted probabilities into decilic classes. Then we add the factor to the data frame. Here again we have to be careful. The `cut` function has two optional arguments that determine the resulting classification:
 
-- the argument `right` is used to decide whether the decili classes are right-closed (and left-open) intervals or viceversa.
-- the argument `include.lowest` makes the first (or last, depending on `right`) interval be closed, to include the boundary points of the data set.
+- The argument `right` is used to decide whether the decilic classes are right-closed (and left-open) intervals or viceversa.
+- The argument `include.lowest` makes the first (or last, depending on `right`) interval be closed, to include the boundary points of the data set.
 
 In the code below these arguments are set to reproduce the results obtained with Stata that appear in the lecture pdf. If you want to reproduce the Systat results change `right=TRUE` to `right=FALSE`. 
 
@@ -160,7 +160,7 @@ LOWBWT$riskDecile = cut(fitted(glmLOWBWT), breaks = cutPoints, include.lowest = 
 table(LOWBWT$riskDecile)
 ```
 
-Now the values of `LOW` for the observations in each decilic class are sumed to obtain the observed values of $y=1$. The `tapply` is the tool for this job, appplying an operation (the sum in this case) across the values of a factor.
+Next the values of `LOW` for the observations in each decilic class are sumed to obtain the observed values of $y=1$. The `tapply` function is the tool for this job, applying an operation (the sum in this case) across the values of a factor.
 
 ```{r}
 (Obs1 = with(LOWBWT, tapply(LOW, INDEX = riskDecile, FUN = sum)) )
@@ -171,7 +171,6 @@ The same operation, this time applied to the fitted probabilities gives the expe
 ```{r}
 (Exp1 = with(LOWBWT, tapply(fit, INDEX = riskDecile, FUN = sum)) )
 ```
-
 
 And since we know the number of observations in each decilic class, the observed and expected values for $y = 0$ are obtained by subtracting:
 
@@ -212,7 +211,7 @@ print(xtable(tablePg21, align = "ccccccc"), type="html", comment=FALSE)
 
 #### Plot of the observed vs expected pairs
 
-We can use the above results to get this plot. I have labeled the points withthe number of the correspondng decilic class to make it easier to check which ones fall far from the diagonal line.  The 
+We can use the above results to get this plot. I have labeled the points with the number of the correspondng decilic class to make it easier to check which ones fall far from the diagonal line.
 
 ```{r fig.align='center', fig.width=5, fig.height=5}
 (maxX = max(c(range(Obs1), range(Exp1))))
@@ -266,7 +265,7 @@ However, as we have been warned in the lecture, it is not a good idea to use thi
 
 # Hosmer-Lemeshow test
 
-To define the Hosmer - Lemeshow statistic we will use the first grouping startegy described in the lecture pdf. This means that we can directly use the $2\times J$ contingency table of observed and expected values for decilic classes that we constructed before. The Hosmer - Lemeshow statistic is:
+To define the Hosmer - Lemeshow statistic we will use the first grouping strategy described in the lecture pdf. This means that we can directly use the $2\times J$ contingency table of observed and expected values for decilic classes that we constructed before. The Hosmer - Lemeshow statistic is:
 
 ```{r}
 (HL.statistic = sum((Obs1 - Exp1)^2/Exp1) + sum((Obs0 - Exp0)^2/Exp0))
@@ -287,11 +286,11 @@ And the p-value is
 
 ### Using the `ResourceSelection` library
 
-If you [https://www.google.es/search?q=R+Hosmer+Lemeshow+test](google for "R Hosmer Lemeshow test") you will come across the `ResourceSelection` library. The library includes a `hoslem.test` function to perform the Hosmer - Lemeshow test. The result in our case is: 
+If you [google for "R Hosmer Lemeshow test"](https://www.google.es/search?q=R+Hosmer+Lemeshow+test) you will come across the `ResourceSelection` library. The library includes a `hoslem.test` function to perform the Hosmer - Lemeshow test. The result in our case is: 
 
 ```{r}
 library(ResourceSelection)
-(HL= hoslem.test(LOWBWT$LOW, fitted(glmLOWBWT), g = 9))
+(HL= hoslem.test(LOWBWT$LOW, fitted(glmLOWBWT)))
 ```
 
 And as you can see the results are slightly different from what we got. The output of the function also includes a table of observed and expected values (I have rearranged the rows to make them look similar to the table in the pdf for this lecture)
@@ -301,6 +300,14 @@ t(cbind(HL$observed, HL$expected))[c(1, 3, 2, 4), ]
 ```
 
 This makes me think that the difference is in the method used for the definition of the decilic classes. But I have not had the chance to find out what definition of decilic classes is being used in the `hoslem.test` function. 
+
+**Update: ** I think that using this code to define the decilic risk classes will reproduce the results in the `hoslem.test`function.
+
+```{r eval=FALSE, comment=NULL}
+g = 10
+(cutPoints = quantile(yhat, probs=seq(0, 1, 1/g))
+LOWBWT$riskDecile = cut(fitted(glmLOWBWT), breaks = cutPoints, include.lowest = TRUE, right = TRUE)
+```
 
 
 # ROC curve and discrimination
@@ -323,7 +330,7 @@ Using this prediction object we can ask `ROCR` to compute a series of performanc
 sens = performance(LOWBWT.pred, measure = "sens")
 ```
 
-Before going further, some remarks are in order. R, as object oriented language, has two systems of classes, called S3 and S4. The result of calling `performance` ia an object of type S4, consisting of *slots*. We can access these slots using \@ (instead of the familiar \$). For example, to access the cutoff values we use:
+Before going further, some remarks are in order. R, as an object oriented language, has two systems of classes, called S3 and S4. The result of calling `performance` ia an object of type S4, consisting of *slots*. We can access these slots using \@ (instead of the familiar \$). For example, to access the cutoff values we use:
 
 ```{r}
 cutoffs = sens@x.values[[1]]
@@ -382,7 +389,7 @@ AUC = performance(LOWBWT.pred,"auc")
 AUC@y.values
 ```
 
-Note that the curve taht appears on page 31 of the lecture pdf is **not** the ROC curve for the `LOWBWT` logistic model in this lecture. 
+Note that the curve that appears on page 31 of the lecture pdf is **not** the ROC curve for the `LOWBWT` logistic model in this lecture. 
 
 ---
 
